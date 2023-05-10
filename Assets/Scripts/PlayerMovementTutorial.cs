@@ -135,6 +135,7 @@ public class PlayerMovementTutorial : MonoBehaviour
         {
             state = MovementState.sprinting;
             moveSpeed = sprintSpeed;
+
         }
         else if (grounded)
         {

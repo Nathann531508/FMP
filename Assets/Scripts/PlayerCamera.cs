@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -9,9 +10,10 @@ public class PlayerCamera : MonoBehaviour
     public float sensY;
 
     public Transform orientation;
-
+    public Camera Camera;
     float xRotation;
     float yRotation;
+    
 
     private void Start()
     {
@@ -31,4 +33,5 @@ public class PlayerCamera : MonoBehaviour
         transform.rotation = Quaternion.Euler(xRotation, yRotation, 0);
         orientation.rotation = Quaternion.Euler(0, yRotation, 0);
     }
+
 }
