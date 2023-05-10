@@ -12,6 +12,8 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     public bool freeze;
 
+    public bool activeGrapple;
+
     public float groundDrag;
     [Header("Jumpng")]
     public float jumpForce;
@@ -47,17 +49,20 @@ public class PlayerMovementTutorial : MonoBehaviour
     Vector3 moveDirection;
 
     Rigidbody rb;
-  
+
 
 
     public MovementState state;
     public enum MovementState
     {
+        freeze,
         walking,
         sprinting,
         crouching,
         air
     }
+
+
 
     private void Start()
     {
@@ -66,7 +71,7 @@ public class PlayerMovementTutorial : MonoBehaviour
 
         readyToJump = true;
         startYScale = transform.localScale.y;
-        
+
     }
 
     private void Update()
@@ -79,11 +84,11 @@ public class PlayerMovementTutorial : MonoBehaviour
         StateHandler();
 
         // handle drag
-        if (grounded)
+        if (grounded && !activeGrapple)
             rb.drag = groundDrag;
         else
             rb.drag = 0;
-    
+
     }
 
     private void FixedUpdate()
@@ -99,7 +104,7 @@ public class PlayerMovementTutorial : MonoBehaviour
         if (Input.GetKeyDown(jumpKey)) Debug.Log("Space pressed");
 
         // when to jump
-        if(Input.GetKey(jumpKey) && readyToJump && grounded)
+        if (Input.GetKey(jumpKey) && readyToJump && grounded)
         {
             Debug.Log("jumped");
 
@@ -121,17 +126,24 @@ public class PlayerMovementTutorial : MonoBehaviour
         }
     }
 
-    
+
 
 
     private void StateHandler()
     {
-        if (Input.GetKey(crouchKey))
+        //Mode - freeze
+        if (freeze)
+        {
+            state = MovementState.freeze;
+            moveSpeed = 0;
+            rb.velocity = Vector3.zero;
+        }
+        else if (Input.GetKey(crouchKey))
         {
             state = MovementState.crouching;
             moveSpeed = crouchSpeed;
         }
-        else if(grounded && Input.GetKey(sprintKey))
+        else if (grounded && Input.GetKey(sprintKey))
         {
             state = MovementState.sprinting;
             moveSpeed = sprintSpeed;
@@ -151,6 +163,7 @@ public class PlayerMovementTutorial : MonoBehaviour
 
     private void MovePlayer()
     {
+        if (activeGrapple) return;
         // calculate movement direction
         moveDirection = orientation.forward * verticalInput + orientation.right * horizontalInput;
 
@@ -161,11 +174,11 @@ public class PlayerMovementTutorial : MonoBehaviour
         }
 
         // on ground
-        if(grounded)
+        if (grounded)
             rb.AddForce(moveDirection.normalized * moveSpeed * 10f, ForceMode.Force);
 
         // in air
-        else if(!grounded)
+        else if (!grounded)
             rb.AddForce(moveDirection.normalized * moveSpeed * 10f * airMultiplier, ForceMode.Force);
     }
 
@@ -174,7 +187,7 @@ public class PlayerMovementTutorial : MonoBehaviour
         Vector3 flatVel = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
 
         // limit velocity if needed
-        if(flatVel.magnitude > moveSpeed)
+        if (flatVel.magnitude > moveSpeed)
         {
             Vector3 limitedVel = flatVel.normalized * moveSpeed;
             rb.velocity = new Vector3(limitedVel.x, rb.velocity.y, limitedVel.z);
@@ -192,10 +205,24 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         readyToJump = true;
     }
+    public void JumpToPosition(Vector3 targetPosition, float trajectoryHeight)
+    {
 
+        activeGrapple = true;
+
+        velocityToSet = CalculateJumpVelocity(transform.position, targetPosition, trajectoryHeight);
+        Invoke(nameof(SetVelocity), 0.1f);
+    }
+
+    private Vector3 velocityToSet;
+
+    private void SetVelocity()
+    {
+        rb.velocity = velocityToSet;
+    }
     private bool OnSlope()
     {
-        if(Physics.Raycast(transform.position, Vector3.down, out slopeHit, playerHeight * 0.5f + 0.3f))
+        if (Physics.Raycast(transform.position, Vector3.down, out slopeHit, playerHeight * 0.5f + 0.3f))
         {
             float angle = Vector3.Angle(Vector3.up, slopeHit.normal);
             return angle < maxSlopeAngle && angle != 0;
@@ -207,9 +234,20 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         return Vector3.ProjectOnPlane(moveDirection, slopeHit.normal).normalized;
     }
-    
-   
-    
+    public Vector3 CalculateJumpVelocity(Vector3 startPoint, Vector3 endPoint, float trajectoryHeight)
+    {
+        float gravity = Physics.gravity.y;
+        float displacementY = endPoint.y - startPoint.y;
+        Vector3 displacementXZ = new Vector3(endPoint.x - startPoint.x, 0f, endPoint.z - startPoint.z);
 
-  
+        Vector3 velocityY = Vector3.up * Mathf.Sqrt(-2 * gravity * trajectoryHeight);
+        Vector3 velocityXZ = displacementXZ / (Mathf.Sqrt(-2 * trajectoryHeight / gravity)
+            + Mathf.Sqrt(2 * (displacementY - trajectoryHeight) / gravity));
+
+        return velocityXZ + velocityY;
+    }
+
+
+
+
 }
