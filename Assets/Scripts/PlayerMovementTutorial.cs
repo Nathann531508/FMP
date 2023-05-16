@@ -57,11 +57,12 @@ public class PlayerMovementTutorial : MonoBehaviour
     {
         freeze,
         walking,
+        wallrunning,
         sprinting,
         crouching,
         air
     }
-
+    public bool wallrunning;
 
 
     private void Start()
