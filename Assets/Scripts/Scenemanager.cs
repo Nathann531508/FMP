@@ -7,6 +7,6 @@ public class Scenemanager : MonoBehaviour
 {
 public void PlayPressed()
     {
-        SceneManager.LoadScene("Tutorial");
+        SceneManager.LoadScene("Opening");
     }
 }
